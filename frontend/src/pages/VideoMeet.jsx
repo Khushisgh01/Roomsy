@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import io from "socket.io-client";
-import { Badge, IconButton, TextField } from '@mui/material';
-import { Button } from '@mui/material';
+import { Badge, IconButton, TextField, Button, Typography, Box } from '@mui/material';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import styles from "../styles/videoComponent.module.css";
@@ -48,7 +47,7 @@ export default function VideoMeetComponent() {
 
     let [message, setMessage] = useState("");
 
-    let [newMessages, setNewMessages] = useState(3);
+    let [newMessages, setNewMessages] = useState(0);
 
     let [askForUsername, setAskForUsername] = useState(true);
 
@@ -58,17 +57,10 @@ export default function VideoMeetComponent() {
 
     let [videos, setVideos] = useState([])
 
-    // TODO
-    // if(isChrome() === false) {
-
-
-    // }
 
     useEffect(() => {
-        console.log("HELLO")
         getPermissions();
-
-    })
+    }, [])
 
     let getDislayMedia = () => {
         if (screen) {
@@ -86,19 +78,15 @@ export default function VideoMeetComponent() {
             const videoPermission = await navigator.mediaDevices.getUserMedia({ video: true });
             if (videoPermission) {
                 setVideoAvailable(true);
-                console.log('Video permission granted');
             } else {
                 setVideoAvailable(false);
-                console.log('Video permission denied');
             }
 
             const audioPermission = await navigator.mediaDevices.getUserMedia({ audio: true });
             if (audioPermission) {
                 setAudioAvailable(true);
-                console.log('Audio permission granted');
             } else {
                 setAudioAvailable(false);
-                console.log('Audio permission denied');
             }
 
             if (navigator.mediaDevices.getDisplayMedia) {
@@ -124,21 +112,14 @@ export default function VideoMeetComponent() {
     useEffect(() => {
         if (video !== undefined && audio !== undefined) {
             getUserMedia();
-            console.log("SET STATE HAS ", video, audio);
-
         }
-
-
     }, [video, audio])
+
     let getMedia = () => {
         setVideo(videoAvailable);
         setAudio(audioAvailable);
         connectToSocketServer();
-
     }
-
-
-
 
     let getUserMediaSuccess = (stream) => {
         try {
@@ -154,7 +135,6 @@ export default function VideoMeetComponent() {
             connections[id].addStream(window.localStream)
 
             connections[id].createOffer().then((description) => {
-                console.log(description)
                 connections[id].setLocalDescription(description)
                     .then(() => {
                         socketRef.current.emit('signal', id, JSON.stringify({ 'sdp': connections[id].localDescription }))
@@ -204,12 +184,7 @@ export default function VideoMeetComponent() {
         }
     }
 
-
-
-
-
     let getDislayMediaSuccess = (stream) => {
-        console.log("HERE")
         try {
             window.localStream.getTracks().forEach(track => track.stop())
         } catch (e) { console.log(e) }
@@ -270,9 +245,6 @@ export default function VideoMeetComponent() {
         }
     }
 
-
-
-
     let connectToSocketServer = () => {
         socketRef.current = io.connect(server_url, { secure: false })
 
@@ -301,14 +273,10 @@ export default function VideoMeetComponent() {
 
                     // Wait for their video stream
                     connections[socketListId].onaddstream = (event) => {
-                        console.log("BEFORE:", videoRef.current);
-                        console.log("FINDING ID: ", socketListId);
 
                         let videoExists = videoRef.current.find(video => video.socketId === socketListId);
 
                         if (videoExists) {
-                            console.log("FOUND EXISTING");
-
                             // Update the stream of the existing video
                             setVideos(videos => {
                                 const updatedVideos = videos.map(video =>
@@ -319,7 +287,6 @@ export default function VideoMeetComponent() {
                             });
                         } else {
                             // Create a new video
-                            console.log("CREATING NEW");
                             let newVideo = {
                                 socketId: socketListId,
                                 stream: event.stream,
@@ -384,11 +351,9 @@ export default function VideoMeetComponent() {
 
     let handleVideo = () => {
         setVideo(!video);
-        // getUserMedia();
     }
     let handleAudio = () => {
         setAudio(!audio)
-        // getUserMedia();
     }
 
     useEffect(() => {
@@ -396,6 +361,7 @@ export default function VideoMeetComponent() {
             getDislayMedia();
         }
     }, [screen])
+
     let handleScreen = () => {
         setScreen(!screen);
     }
@@ -408,17 +374,6 @@ export default function VideoMeetComponent() {
         window.location.href = "/"
     }
 
-    let openChat = () => {
-        setModal(true);
-        setNewMessages(0);
-    }
-    let closeChat = () => {
-        setModal(false);
-    }
-    let handleMessage = (e) => {
-        setMessage(e.target.value);
-    }
-
     const addMessage = (data, sender, socketIdSender) => {
         setMessages((prevMessages) => [
             ...prevMessages,
@@ -429,17 +384,11 @@ export default function VideoMeetComponent() {
         }
     };
 
-
-
     let sendMessage = () => {
-        console.log(socketRef.current);
         socketRef.current.emit('chat-message', message, username)
         setMessage("");
-
-        // this.setState({ message: "", sender: username })
     }
 
-    
     let connect = () => {
         setAskForUsername(false);
         getMedia();
@@ -447,22 +396,25 @@ export default function VideoMeetComponent() {
 
 
     return (
-        <div>
+        <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", color: "white" }}>
 
             {askForUsername === true ?
 
-                <div>
-
-
-                    <h2>Enter into Lobby </h2>
-                    <TextField id="outlined-basic" label="Username" value={username} onChange={e => setUsername(e.target.value)} variant="outlined" />
-                    <Button variant="contained" onClick={connect}>Connect</Button>
-
-
-                    <div>
-                        <video ref={localVideoref} autoPlay muted></video>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+                    <h2 style={{ marginBottom: "20px" }}>Enter Lobby</h2>
+                    <Box sx={{ display: 'flex', gap: 2, bgcolor: 'rgba(30, 41, 59, 0.7)', p: 4, borderRadius: 4, border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <TextField 
+                            label="Username" 
+                            value={username} 
+                            onChange={e => setUsername(e.target.value)} 
+                            variant="outlined" 
+                            sx={{ '& .MuiOutlinedInput-root': { color: 'white', '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } } }}
+                        />
+                        <Button variant="contained" onClick={connect} sx={{ bgcolor: '#FF9839', height: '56px' }}>Connect</Button>
+                    </Box>
+                    <div style={{ marginTop: "20px" }}>
+                        <video ref={localVideoref} autoPlay muted style={{ width: "300px", borderRadius: "10px", border: "2px solid #FF9839" }}></video>
                     </div>
-
                 </div> :
 
 
@@ -471,27 +423,43 @@ export default function VideoMeetComponent() {
                     {showModal ? <div className={styles.chatRoom}>
 
                         <div className={styles.chatContainer}>
-                            <h1>Chat</h1>
+                            <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: '#1e293b' }}>Chat Room</Typography>
 
                             <div className={styles.chattingDisplay}>
 
                                 {messages.length !== 0 ? messages.map((item, index) => {
-
-                                    console.log(messages)
                                     return (
-                                        <div style={{ marginBottom: "20px" }} key={index}>
-                                            <p style={{ fontWeight: "bold" }}>{item.sender}</p>
-                                            <p>{item.data}</p>
+                                        <div style={{ marginBottom: "15px", textAlign: item.sender === username ? 'right' : 'left' }} key={index}>
+                                            <Typography variant="caption" sx={{ fontWeight: "bold", color: "#FF9839", display: 'block' }}>
+                                                {item.sender}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ 
+                                                bgcolor: item.sender === username ? "#e2e8f0" : "#f1f5f9", 
+                                                p: 1.2, 
+                                                borderRadius: '12px', 
+                                                display: 'inline-block', 
+                                                maxWidth: '85%',
+                                                color: '#1e293b'
+                                            }}>
+                                                {item.data}
+                                            </Typography>
                                         </div>
                                     )
-                                }) : <p>No Messages Yet</p>}
+                                }) : <Typography variant="body2" sx={{ color: "#94a3b8", textAlign: 'center', mt: 4 }}>No Messages Yet</Typography>}
 
 
                             </div>
 
                             <div className={styles.chattingArea}>
-                                <TextField value={message} onChange={(e) => setMessage(e.target.value)} id="outlined-basic" label="Enter Your chat" variant="outlined" />
-                                <Button variant='contained' onClick={sendMessage}>Send</Button>
+                                <TextField 
+                                    fullWidth
+                                    size="small"
+                                    value={message} 
+                                    onChange={(e) => setMessage(e.target.value)} 
+                                    label="Type a message..." 
+                                    variant="outlined" 
+                                />
+                                <Button variant='contained' onClick={sendMessage} sx={{ ml: 1, bgcolor: '#FF9839' }}>Send</Button>
                             </div>
 
 
@@ -503,7 +471,7 @@ export default function VideoMeetComponent() {
                         <IconButton onClick={handleVideo} style={{ color: "white" }}>
                             {(video === true) ? <VideocamIcon /> : <VideocamOffIcon />}
                         </IconButton>
-                        <IconButton onClick={handleEndCall} style={{ color: "red" }}>
+                        <IconButton onClick={handleEndCall} style={{ color: "#ff4444" }}>
                             <CallEndIcon  />
                         </IconButton>
                         <IconButton onClick={handleAudio} style={{ color: "white" }}>
@@ -515,9 +483,10 @@ export default function VideoMeetComponent() {
                                 {screen === true ? <ScreenShareIcon /> : <StopScreenShareIcon />}
                             </IconButton> : <></>}
 
-                        <Badge badgeContent={newMessages} max={999} color='orange'>
-                            <IconButton onClick={() => setModal(!showModal)} style={{ color: "white" }}>
-                                <ChatIcon />                        </IconButton>
+                        <Badge badgeContent={newMessages} color="error">
+                            <IconButton onClick={() => { setModal(!showModal); setNewMessages(0); }} style={{ color: "white" }}>
+                                <ChatIcon />                        
+                            </IconButton>
                         </Badge>
 
                     </div>
